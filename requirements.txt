@@ -1,0 +1,34 @@
+# FastAPI
+fastapi==0.115.12
+uvicorn[standard]==0.34.3
+python-multipart==0.0.20
+
+# Google Gemini
+google-genai==1.16.1
+
+# Vector Store
+qdrant-client==1.14.2
+
+# Database
+sqlalchemy[asyncio]==2.0.41
+asyncpg==0.30.0
+alembic==1.15.2
+
+# Redis
+redis[hiredis]==5.3.0
+
+# PDF Processing
+PyMuPDF==1.25.5
+chardet==5.2.0
+
+# Utilities
+pydantic-settings==2.9.1
+python-dotenv==1.1.0
+
+# Testing
+pytest==8.4.1
+pytest-asyncio==1.0.0
+httpx==0.28.1
+
+# Linting
+ruff==0.11.13
