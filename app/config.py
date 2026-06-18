@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     chat_history_ttl: int = 3600  # seconds
 
     # PostgreSQL
-    database_url: str = "postgresql+asyncpg://palmmind:palmmind_dev@localhost:5432/palmmind"
+    database_url: str = "postgresql+asyncpg://palmmind:palmmind_dev@localhost:5433/palmmind"
 
     # Chunking defaults
     chunk_size: int = 512
