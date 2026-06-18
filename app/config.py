@@ -16,13 +16,13 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    # Google Gemini
-    gemini_api_key: str
+    # Groq API
+    groq_api_key: str
 
     # Models
-    embedding_model: str = "gemini-embedding-2"
-    llm_model: str = "gemini-2.0-flash"
-    embedding_dimension: int = 768
+    embedding_model: str = "BAAI/bge-small-en-v1.5"
+    llm_model: str = "llama3-8b-8192"
+    embedding_dimension: int = 384
 
     # Qdrant
     qdrant_url: str = "http://localhost:6333"

@@ -18,7 +18,7 @@ import uuid
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from google import genai
+from groq import AsyncGroq
 
 from app.schemas.conversation import BookingInfo, ChatResponse, SourceChunk
 from app.services.booking_service import BookingService
@@ -92,7 +92,7 @@ class RAGPipeline:
         self._vector_store = vector_store
         self._memory = chat_memory
         self._booking = booking_service
-        self._client = genai.Client(api_key=settings.gemini_api_key)
+        self._client = AsyncGroq(api_key=settings.groq_api_key)
         self._model = settings.llm_model
         self._top_k = settings.retrieval_top_k
 
@@ -193,15 +193,13 @@ class RAGPipeline:
             question=question,
         )
 
-        response = self._client.models.generate_content(
+        response = await self._client.chat.completions.create(
             model=self._model,
-            contents=prompt,
-            config=genai.types.GenerateContentConfig(
-                temperature=0.0,
-                max_output_tokens=256,
-            ),
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.0,
+            max_tokens=256,
         )
-        return response.text.strip() if response.text else question
+        return response.choices[0].message.content.strip() if response.choices[0].message.content else question
 
     async def _generate_response(
         self,
@@ -216,20 +214,16 @@ class RAGPipeline:
             question=question,
         )
 
-        response = self._client.models.generate_content(
+        response = await self._client.chat.completions.create(
             model=self._model,
-            contents=[
-                genai.types.Content(
-                    role="user",
-                    parts=[genai.types.Part(text=RAG_SYSTEM_PROMPT + "\n\n" + user_prompt)],
-                ),
+            messages=[
+                {"role": "system", "content": RAG_SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt},
             ],
-            config=genai.types.GenerateContentConfig(
-                temperature=0.3,
-                max_output_tokens=1024,
-            ),
+            temperature=0.3,
+            max_tokens=1024,
         )
-        return response.text.strip() if response.text else "I couldn't generate a response. Please try again."
+        return response.choices[0].message.content.strip() if response.choices[0].message.content else "I couldn't generate a response. Please try again."
 
     async def _handle_booking(
         self,

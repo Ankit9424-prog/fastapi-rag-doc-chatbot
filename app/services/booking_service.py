@@ -8,7 +8,7 @@ import uuid
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
-from google import genai
+from groq import AsyncGroq
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -54,7 +54,7 @@ Analyze the following conversation and determine:
    - interview_time: The interview time (in HH:MM format, 24-hour)
 
 Respond with ONLY a valid JSON object in this exact format:
-{{
+{
     "is_booking_intent": true/false,
     "candidate_name": "name or null",
     "candidate_email": "email or null",
@@ -62,7 +62,7 @@ Respond with ONLY a valid JSON object in this exact format:
     "interview_time": "HH:MM or null",
     "missing_fields": ["list of missing field names"],
     "follow_up_message": "A polite message asking for missing info, or confirming the booking if complete. null if not a booking intent."
-}}
+}
 
 Conversation context:
 {conversation_context}
@@ -76,7 +76,7 @@ class BookingService:
 
     def __init__(self, db: AsyncSession, settings: Settings) -> None:
         self._db = db
-        self._client = genai.Client(api_key=settings.gemini_api_key)
+        self._client = AsyncGroq(api_key=settings.groq_api_key)
         self._model = settings.llm_model
 
     async def detect_and_extract(
@@ -100,17 +100,15 @@ class BookingService:
             user_message=user_message,
         )
 
-        response = self._client.models.generate_content(
+        response = await self._client.chat.completions.create(
             model=self._model,
-            contents=prompt,
-            config=genai.types.GenerateContentConfig(
-                temperature=0.1,
-                response_mime_type="application/json",
-            ),
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.1,
+            response_format={"type": "json_object"},
         )
 
         try:
-            result_data = json.loads(response.text)
+            result_data = json.loads(response.choices[0].message.content or "{}")
         except (json.JSONDecodeError, AttributeError):
             logger.warning("Failed to parse booking extraction response")
             return BookingExtractionResult(is_booking_intent=False)

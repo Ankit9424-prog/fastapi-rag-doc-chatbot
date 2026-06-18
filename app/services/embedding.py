@@ -1,11 +1,11 @@
-"""Embedding generation using Google Gemini."""
+"""Document embedding service using FastEmbed locally."""
 
 from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
 
-from google import genai
+from fastembed import TextEmbedding
 
 if TYPE_CHECKING:
     from app.config import Settings
@@ -14,58 +14,38 @@ logger = logging.getLogger(__name__)
 
 
 class EmbeddingService:
-    """Generate text embeddings using Google Gemini API."""
+    """Service for generating embeddings using local FastEmbed model."""
 
     def __init__(self, settings: Settings) -> None:
-        self._client = genai.Client(api_key=settings.gemini_api_key)
         self._model = settings.embedding_model
-        self._dimension = settings.embedding_dimension
+        logger.info("Initializing FastEmbed with model: %s", self._model)
+        self._client = TextEmbedding(model_name=self._model)
 
     async def generate_embeddings(self, texts: list[str]) -> list[list[float]]:
-        """Generate embeddings for a list of texts.
+        """Generate embeddings for a batch of texts.
 
         Args:
-            texts: List of text strings to embed.
+            texts: List of strings to embed.
 
         Returns:
-            List of embedding vectors.
+            List of embedding vectors (list of floats).
         """
         if not texts:
             return []
 
-        embeddings: list[list[float]] = []
-
-        # Process in batches of 100 (Gemini API limit)
-        batch_size = 100
-        for i in range(0, len(texts), batch_size):
-            batch = texts[i : i + batch_size]
-            result = self._client.models.embed_content(
-                model=self._model,
-                contents=batch,
-            )
-            for embedding in result.embeddings:
-                embeddings.append(list(embedding.values))
-
-            logger.info(
-                "Generated embeddings for batch %d/%d (%d texts)",
-                i // batch_size + 1,
-                (len(texts) + batch_size - 1) // batch_size,
-                len(batch),
-            )
-
-        return embeddings
+        # FastEmbed returns a generator of numpy arrays. We convert them to lists of floats.
+        embeddings_generator = self._client.embed(texts)
+        result = [emb.tolist() for emb in embeddings_generator]
+        return result
 
     async def generate_single_embedding(self, text: str) -> list[float]:
-        """Generate embedding for a single text.
+        """Generate an embedding for a single text.
 
         Args:
-            text: Text string to embed.
+            text: String to embed.
 
         Returns:
             Embedding vector.
         """
-        result = self._client.models.embed_content(
-            model=self._model,
-            contents=[text],
-        )
-        return list(result.embeddings[0].values)
+        embeddings = await self.generate_embeddings([text])
+        return embeddings[0]
