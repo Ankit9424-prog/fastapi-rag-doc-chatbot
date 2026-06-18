@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     gemini_api_key: str
 
     # Models
-    embedding_model: str = "text-embedding-004"
+    embedding_model: str = "gemini-embedding-2"
     llm_model: str = "gemini-2.0-flash"
     embedding_dimension: int = 768
 
