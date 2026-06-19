@@ -1,6 +1,18 @@
-version: "3.8"
-
 services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      qdrant:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
   qdrant:
     image: qdrant/qdrant:latest
     ports:
@@ -8,6 +20,11 @@ services:
       - "6334:6334"
     volumes:
       - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:6333/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   redis:
     image: redis:7-alpine
@@ -15,6 +32,11 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   postgres:
     image: postgres:16-alpine
@@ -26,6 +48,11 @@ services:
       POSTGRES_DB: palmmind
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U palmmind"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
 volumes:
   qdrant_data:

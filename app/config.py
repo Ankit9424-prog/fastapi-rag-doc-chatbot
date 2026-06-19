@@ -16,6 +16,9 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
+    # Authentication
+    api_key: str = "changeme"
+
     # Groq API
     groq_api_key: str
 
@@ -41,6 +44,12 @@ class Settings(BaseSettings):
 
     # RAG
     retrieval_top_k: int = 5
+
+    # CORS
+    allowed_origins: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:8000",
+    ]
 
 
 @lru_cache

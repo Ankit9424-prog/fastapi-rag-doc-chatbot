@@ -6,11 +6,12 @@ import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from fastapi import FastAPI, Request, status
+from fastapi import Depends, FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from qdrant_client import AsyncQdrantClient
 
+from app.auth import verify_api_key
 from app.config import get_settings
 from app.db.session import Base, engine
 from app.services.vector_store import VectorStoreService
@@ -45,12 +46,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
+    settings = get_settings()
+
     app = FastAPI(
         title="PalmMind RAG Backend",
         description=(
             "A production-grade RAG backend with document ingestion and "
             "conversational AI capabilities. Built with FastAPI, Qdrant, "
-            "Redis, and Google Gemini."
+            "Redis, and Groq."
         ),
         version="1.0.0",
         lifespan=lifespan,
@@ -59,18 +62,26 @@ def create_app() -> FastAPI:
     # CORS middleware
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=settings.allowed_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 
-    # Register routers
-    from app.api.ingestion import router as ingestion_router
+    # Register routers with API key authentication
     from app.api.conversation import router as conversation_router
+    from app.api.ingestion import router as ingestion_router
 
-    app.include_router(ingestion_router, prefix="/api/v1")
-    app.include_router(conversation_router, prefix="/api/v1")
+    app.include_router(
+        ingestion_router,
+        prefix="/api/v1",
+        dependencies=[Depends(verify_api_key)],
+    )
+    app.include_router(
+        conversation_router,
+        prefix="/api/v1",
+        dependencies=[Depends(verify_api_key)],
+    )
 
     # Global exception handler
     @app.exception_handler(Exception)
@@ -83,7 +94,7 @@ def create_app() -> FastAPI:
             content={"detail": "An internal server error occurred."},
         )
 
-    # Health check
+    # Health check (no auth required)
     @app.get("/health", tags=["Health"])
     async def health_check() -> dict[str, str]:
         """Health check endpoint."""

@@ -1,16 +1,28 @@
-.PHONY: run test lint format docker-up docker-down install
+.PHONY: run test lint format docker-up docker-down docker-build install migrate clean
 
 # Install dependencies
 install:
 	pip install -r requirements.txt
 
-# Start infrastructure services
+# Start infrastructure services (Qdrant, Redis, PostgreSQL)
 docker-up:
-	docker-compose up -d
+	docker compose up -d qdrant redis postgres
 
 # Stop infrastructure services
 docker-down:
-	docker-compose down
+	docker compose down
+
+# Build Docker image for the application
+docker-build:
+	docker compose build app
+
+# Run database migrations
+migrate:
+	alembic upgrade head
+
+# Create a new migration
+migration:
+	alembic revision --autogenerate -m "$(msg)"
 
 # Run the application
 run:
@@ -27,3 +39,11 @@ lint:
 # Format code
 format:
 	ruff format app/ tests/
+
+# Remove build artifacts
+clean:
+	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name .pytest_cache -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name .ruff_cache -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+	rm -rf build/ dist/

@@ -42,11 +42,11 @@ async def chat(
             session_id=request.session_id,
         )
         return response
-    except Exception as e:
+    except Exception:
         logger.exception("Error processing chat message")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to process message: {str(e)}",
+            detail="Failed to process message. Please try again.",
         )
 
 

@@ -1,7 +1,36 @@
 [project]
-name = "kind-brahmagupta"
-version = "0.1.0"
-description = "Add your description here"
+name = "palmmind-rag-backend"
+version = "1.0.0"
+description = "Production-grade RAG backend with document ingestion and conversational AI"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+license = {text = "Proprietary"}
+authors = [
+    {name = "Ankit Katwal"},
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade
+    "RUF",  # ruff-specific rules
+]
+ignore = ["E501"]  # line length handled by formatter
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
